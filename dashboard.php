@@ -49,6 +49,17 @@ while ($row = $result->fetch_assoc()) {
 }
 $trans_stmt->close();
 
+// 4b. Recent Messages (SMS History)
+$recent_messages = [];
+$msg_stmt = $conn->prepare("SELECT sender_id, recipients, message, cost, status, created_at FROM messages WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+$msg_stmt->bind_param("i", $user['id']);
+$msg_stmt->execute();
+$msg_result = $msg_stmt->get_result();
+while ($row = $msg_result->fetch_assoc()) {
+    $recent_messages[] = $row;
+}
+$msg_stmt->close();
+
 // 5. Fetch Active Banner Ads
 $banner_ads = [];
 $banner_stmt = $conn->prepare("SELECT image_path, link FROM banner_ads WHERE expires_at IS NULL OR expires_at > NOW() ORDER BY created_at DESC");
@@ -207,7 +218,45 @@ $banner_stmt->close();
                 <h5 class="card-title mb-0"><i class="fas fa-history"></i> SMS History</h5>
             </div>
             <div class="card-body">
-                <canvas id="activityChart"></canvas>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Sender ID</th>
+                                <th>Recipient</th>
+                                <th>Message</th>
+                                <th>Cost</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($recent_messages)): ?>
+                                <tr><td colspan="6" class="text-center">No recent messages.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($recent_messages as $msg): ?>
+                                <tr>
+                                    <td><?php echo date('M d, H:i', strtotime($msg['created_at'])); ?></td>
+                                    <td><?php echo htmlspecialchars($msg['sender_id']); ?></td>
+                                    <td class="text-truncate" style="max-width: 100px;" title="<?php echo htmlspecialchars($msg['recipients']); ?>"><?php echo htmlspecialchars($msg['recipients']); ?></td>
+                                    <td class="text-truncate" style="max-width: 150px;" title="<?php echo htmlspecialchars($msg['message']); ?>"><?php echo htmlspecialchars($msg['message']); ?></td>
+                                    <td class="text-nowrap"><?php echo get_currency_symbol(); ?><?php echo number_format($msg['cost'], 2); ?></td>
+                                    <td>
+                                        <?php
+                                            $status = htmlspecialchars($msg['status']);
+                                            $badge_class = 'bg-secondary';
+                                            if (in_array($status, ['success', 'delivered', 'sent'])) $badge_class = 'bg-success';
+                                            elseif (in_array($status, ['failed', 'undelivered'])) $badge_class = 'bg-danger';
+                                            elseif ($status === 'pending') $badge_class = 'bg-warning';
+                                            echo "<span class='badge " . $badge_class . "'>" . ucfirst($status) . "</span>";
+                                        ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -258,50 +307,5 @@ $banner_stmt->close();
     </div>
 </div>
 
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('activityChart').getContext('2d');
-
-    fetch('api/get_chart_data.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: data.chartData,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    precision: 0 // Ensure y-axis shows whole numbers
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false // Hide legend as there's only one dataset
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                            }
-                        },
-                        hover: {
-                            mode: 'nearest',
-                            intersect: true
-                        }
-                    }
-                });
-            } else {
-                console.error('Failed to load chart data:', data.message);
-            }
-        })
-        .catch(error => console.error('Error fetching chart data:', error));
-});
-</script>
 
 <?php include 'includes/footer.php'; ?>
