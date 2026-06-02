@@ -1064,6 +1064,7 @@ print_r(json_decode($response, true));
                 <div class="api-card-header d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0">Check Sender ID Status</h5>
                     <div>
+                        <span class="method-badge get">GET</span>
                         <span class="method-badge post">POST</span>
                     </div>
                 </div>
@@ -1122,6 +1123,7 @@ print_r(json_decode($response, true));
                 <div class="api-card-header d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0">Check Caller ID Status</h5>
                     <div>
+                        <span class="method-badge get">GET</span>
                         <span class="method-badge post">POST</span>
                     </div>
                 </div>
