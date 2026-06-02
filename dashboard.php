@@ -200,11 +200,11 @@ $banner_stmt->close();
 </div>
 
 <div class="row">
-    <!-- Recent Activity and Transactions -->
+    <!-- SMS History and Transactions -->
     <div class="col-lg-7 mb-4">
         <div class="card h-100">
             <div class="card-header">
-                <h5 class="card-title mb-0"><i class="fas fa-chart-line"></i> Recent Activity</h5>
+                <h5 class="card-title mb-0"><i class="fas fa-history"></i> SMS History</h5>
             </div>
             <div class="card-body">
                 <canvas id="activityChart"></canvas>
