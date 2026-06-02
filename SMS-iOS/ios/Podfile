@@ -1,0 +1,26 @@
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+platform :ios, '13.0'
+install! 'cocoapods', :deterministic_uuids => false
+
+target 'PhilmoreSMS' do
+  config = use_native_modules!
+  use_react_native!(
+    :path => "../node_modules/react-native",
+    :hermes_enabled => true
+  )
+
+  post_install do |installer|
+    react_native_post_install(installer)
+
+    # Address boost checksum error
+    installer.pods_project.targets.each do |target|
+      if target.name == 'boost'
+        target.build_configurations.each do |config|
+          # You can add boost specific patches here if needed
+        end
+      end
+    end
+  end
+end

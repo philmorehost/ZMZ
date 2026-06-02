@@ -1,0 +1,14 @@
+[24-Apr-2026 19:33:14 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in /home/appsms/public_html/app/bootstrap.php:20
+Stack trace:
+#0 /home/appsms/public_html/app/bootstrap.php(20): mysqli->__construct()
+#1 /home/appsms/public_html/web/api/bootstrap.php(3): require_once('/home/appsms/pu...')
+#2 /home/appsms/public_html/web/api/auth.php(3): require_once('/home/appsms/pu...')
+#3 {main}
+  thrown in /home/appsms/public_html/app/bootstrap.php on line 20
+[24-Apr-2026 20:16:25 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in /home/appsms/public_html/app/bootstrap.php:20
+Stack trace:
+#0 /home/appsms/public_html/app/bootstrap.php(20): mysqli->__construct()
+#1 /home/appsms/public_html/web/api/bootstrap.php(3): require_once('/home/appsms/pu...')
+#2 /home/appsms/public_html/web/api/auth.php(3): require_once('/home/appsms/pu...')
+#3 {main}
+  thrown in /home/appsms/public_html/app/bootstrap.php on line 20
