@@ -62,7 +62,6 @@ const DashboardScreen = ({ navigation }) => {
 
                 <View style={styles.servicesGrid}>
                     <ServiceItem icon="💬" label="SMS" onPress={() => navigation.navigate('Messaging', { type: 'sms' })} bg="#E3F2FD" />
-                    <ServiceItem icon="🌍" label="Global SMS" onPress={() => navigation.navigate('Messaging', { type: 'sms', route: 'global' })} bg="#FFF3E0" />
                     <ServiceItem icon="📞" label="Voice" onPress={() => navigation.navigate('Messaging', { type: 'voice' })} bg="#F3E5F5" />
                     <ServiceItem icon="🎵" label="Voice File" onPress={() => navigation.navigate('Messaging', { type: 'voice_audio' })} bg="#FFF9C4" />
                     <ServiceItem icon="🛡️" label="OTP" onPress={() => navigation.navigate('OtpTemplates')} bg="#E0F2F1" />
@@ -73,10 +72,8 @@ const DashboardScreen = ({ navigation }) => {
                     <ServiceItem icon="📔" label="Phonebook" onPress={() => navigation.navigate('Phonebook')} bg="#EFEBE9" />
                     <ServiceItem icon="📈" label="Reports" onPress={() => navigation.navigate('Reports')} bg="#F3E5F5" />
                     <ServiceItem icon="🆔" label="Register ID" onPress={() => navigation.navigate('RegisterId')} bg="#E8EAF6" />
-                    <ServiceItem icon="💳" label="G-Wallet" onPress={() => navigation.navigate('GlobalWallet')} bg="#F3E5F5" />
                     <ServiceItem icon="🏷️" label="Pricing" onPress={() => navigation.navigate('Pricing')} bg="#FFF3E0" />
                     <ServiceItem icon="🎂" label="Birthday" onPress={() => navigation.navigate('BirthdayScheduler')} bg="#FFFDE7" />
-                    <ServiceItem icon="🌐" label="Coverage" onPress={() => navigation.navigate('GlobalCoverage')} bg="#E1F5FE" />
                     <ServiceItem icon="⏳" label="Schedules" onPress={() => navigation.navigate('Schedules')} bg="#F1F8E9" />
                 </View>
 

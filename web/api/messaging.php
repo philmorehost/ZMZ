@@ -10,7 +10,7 @@ if ($action === 'send_sms') {
     $sender_id = $_POST['senderID'] ?? '';
     $recipients = $_POST['recipients'] ?? '';
     $message = $_POST['message'] ?? '';
-    $route = $_POST['route'] ?? 'promotional'; // promotional, corporate, global
+    $route = $_POST['route'] ?? 'promotional'; // promotional, corporate
 
     if (empty($sender_id) || empty($recipients) || empty($message)) {
         mobile_api_error('Missing required parameters');

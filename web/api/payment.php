@@ -58,49 +58,5 @@ if ($action === 'settings') {
         $conn->rollback();
         mobile_api_error('Failed to submit payment proof');
     }
-} elseif ($action === 'global_settings') {
-    $settings = get_settings();
-    $global_wallet_currency = $settings['global_wallet_currency'] ?? 'EUR';
-    $conversion_rate = (float)($settings['global_wallet_conversion_rate'] ?? 0);
-
-    $crypto_methods = [];
-    $res = $conn->query("SELECT id, name, address, network, instructions FROM crypto_payment_methods WHERE is_active = 1");
-    while($row = $res->fetch_assoc()) $crypto_methods[] = $row;
-
-    $stmt = $conn->prepare("SELECT balance FROM global_wallets WHERE user_id = ?");
-    $stmt->bind_param("i", $user['id']);
-    $stmt->execute();
-    $gw_res = $stmt->get_result()->fetch_assoc();
-    $global_balance = (float)($gw_res['balance'] ?? 0);
-
-    mobile_api_success([
-        'global_balance' => $global_balance,
-        'currency' => $global_wallet_currency,
-        'conversion_rate' => $conversion_rate,
-        'crypto_methods' => $crypto_methods,
-        'main_balance' => (float)$user['balance']
-    ]);
-} elseif ($action === 'convert') {
-    $amount = (float)$_POST['amount'];
-    $settings = get_settings();
-    $conversion_rate = (float)($settings['global_wallet_conversion_rate'] ?? 0);
-    $global_wallet_currency = $settings['global_wallet_currency'] ?? 'EUR';
-
-    if ($amount <= 0 || $user['balance'] < $amount || $conversion_rate <= 0) {
-        mobile_api_error('Invalid amount or insufficient balance');
-    }
-
-    $converted_amount = $amount * $conversion_rate;
-    $conn->begin_transaction();
-    try {
-        $conn->query("UPDATE users SET balance = balance - $amount WHERE id = {$user['id']}");
-        $conn->query("INSERT INTO global_wallets (user_id, balance) VALUES ({$user['id']}, $converted_amount) ON DUPLICATE KEY UPDATE balance = balance + $converted_amount");
-        $conn->query("INSERT INTO global_manual_deposits (user_id, amount, currency, crypto_type, proof_of_payment, status) VALUES ({$user['id']}, $converted_amount, '$global_wallet_currency', 'conversion', 'conversion', 'approved')");
-        $conn->commit();
-        mobile_api_success([], 'Conversion successful');
-    } catch (Exception $e) {
-        $conn->rollback();
-        mobile_api_error('Conversion failed');
-    }
 }
 ?>
