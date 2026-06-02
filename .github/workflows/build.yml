@@ -1,0 +1,81 @@
+name: Build Mobile Applications
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK (Kotlin)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x SMS-Native-Android/gradlew
+
+      - name: Build Android Release APK
+        working-directory: SMS-Native-Android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: SMS-Native-Android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+  build-ios:
+    name: Compile iOS App (React Native)
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: SMS-iOS/package.json
+
+      - name: Install NPM Dependencies
+        working-directory: SMS-iOS
+        run: npm ci
+
+      - name: Install CocoaPods Dependencies
+        working-directory: SMS-iOS/ios
+        run: |
+          pod repo update
+          pod install
+
+      - name: Build Xcode Project (Simulator / Compile Check)
+        working-directory: SMS-iOS/ios
+        run: |
+          xcodebuild -workspace PhilmoreSMS.xcworkspace \
+                     -scheme PhilmoreSMS \
+                     -configuration Release \
+                     -sdk iphonesimulator \
+                     -derivedDataPath build \
+                     CODE_SIGNING_ALLOWED=NO \
+                     COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Zip iOS Build Product
+        working-directory: SMS-iOS/ios
+        run: zip -r PhilmoreSMS-Sim.zip build/Build/Products/Release-iphonesimulator/PhilmoreSMS.app
+
+      - name: Upload iOS App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-app
+          path: SMS-iOS/ios/PhilmoreSMS-Sim.zip
