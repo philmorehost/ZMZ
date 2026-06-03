@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_sender_id'])) {
                 $stmt->bind_param("isss", $user_id, $sender_id, $sample_message, $api_response_str);
 
                 if ($stmt->execute()) {
-                    $success = "OTP Sender ID submitted successfully to Termii. It is now pending review.";
+                    $success = "OTP Sender ID submitted successfully to the gateway. It is now pending review.";
                 } else {
                     $errors[] = "Failed to save OTP Sender ID submission locally. Please contact support.";
                 }
@@ -77,7 +77,7 @@ $stmt->close();
     <!-- Submit OTP Sender ID Form -->
     <div class="col-md-5">
         <div class="card card-primary">
-            <div class="card-header"><h3 class="card-title">Register New OTP Sender ID (Termii)</h3></div>
+            <div class="card-header"><h3 class="card-title">Register New OTP Sender ID</h3></div>
             <form action="otp-sender-id.php" method="POST">
                 <div class="card-body">
                     <?php if (!empty($errors)): ?>
@@ -94,7 +94,7 @@ $stmt->close();
                     <div class="form-group">
                         <label for="sender_id">Sender ID</label>
                         <input type="text" class="form-control" name="sender_id" placeholder="Max 11 characters" maxlength="11" required>
-                        <small class="form-text text-muted">This will be used for OTP verification messages via Termii.</small>
+                        <small class="form-text text-muted">This will be used for OTP verification messages.</small>
                     </div>
                     <div class="form-group">
                         <label for="sample_message">Sample OTP Message</label>
