@@ -128,6 +128,7 @@ $settings = get_settings();
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="nav-icon fas fa-id-card"></i> <span class="nav-link-text">Register IDs</span></a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="sender-id.php">Promotional ID</a></li>
+                                <li><a class="dropdown-item" href="otp-sender-id.php">OTP Sender ID</a></li>
                                 <li><a class="dropdown-item" href="corporate-sender-id.php">Corporate ID</a></li>
                                 <li><a class="dropdown-item" href="airtel-sender-id.php">Airtel ID</a></li>
                                 <li><a class="dropdown-item" href="caller-id.php">Caller ID</a></li>
@@ -252,6 +253,7 @@ $settings = get_settings();
                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="nav-icon fas fa-id-card"></i> Register IDs</a>
                                <ul class="dropdown-menu">
                                    <li><a class="dropdown-item" href="sender-id.php">Promotional ID</a></li>
+                                   <li><a class="dropdown-item" href="otp-sender-id.php">OTP Sender ID</a></li>
                                    <li><a class="dropdown-item" href="corporate-sender-id.php">Corporate ID</a></li>
                                    <li><a class="dropdown-item" href="airtel-sender-id.php">Airtel ID</a></li>
                                    <li><a class="dropdown-item" href="caller-id.php">Caller ID</a></li>

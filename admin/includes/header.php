@@ -61,6 +61,7 @@ function is_active($page_name) {
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="sender-ids.php">Local SMS SenderID</a></li>
+                                <li><a class="dropdown-item" href="otp-sender-ids.php">OTP Sender IDs</a></li>
                                 <li><a class="dropdown-item" href="caller-ids.php">Caller IDs</a></li>
 								
                             </ul>
@@ -158,8 +159,9 @@ function is_active($page_name) {
                         <ul class="nav flex-column">
                             <li class="nav-item"><a href="dashboard.php" class="nav-link <?php echo is_active('dashboard.php'); ?>"><i class="nav-icon fas fa-tachometer-alt"></i> Dashboard</a></li>
                             <li class="nav-item"><a href="users.php" class="nav-link <?php echo is_active('users.php'); ?>"><i class="nav-icon fas fa-users"></i> User Management</a></li>
-                            <li class="nav-item"><a href="sender-ids.php" class="nav-link <?php echo is_active('sender-ids.php'); ?>"><i class="nav-icon fas fa-id-card"></i> Sender IDs</a></li>
-                            <li class="nav-item"><a href="caller-ids.php" class="nav-link <?php echo is_active('caller-ids.php'); ?>"><i class="nav-icon fas fa-phone-alt"></i> Caller IDs</a></li>
+                             <li class="nav-item"><a href="sender-ids.php" class="nav-link <?php echo is_active('sender-ids.php'); ?>"><i class="nav-icon fas fa-id-card"></i> Sender IDs</a></li>
+                             <li class="nav-item"><a href="otp-sender-ids.php" class="nav-link <?php echo is_active('otp-sender-ids.php'); ?>"><i class="nav-icon fas fa-shield-alt"></i> OTP Sender IDs</a></li>
+                             <li class="nav-item"><a href="caller-ids.php" class="nav-link <?php echo is_active('caller-ids.php'); ?>"><i class="nav-icon fas fa-phone-alt"></i> Caller IDs</a></li>
                             <li class="nav-item"><a href="otp-templates.php" class="nav-link <?php echo is_active('otp-templates.php'); ?>"><i class="nav-icon fas fa-shield-alt"></i> OTP Templates</a></li>
                             <li class="nav-item"><a href="transactions.php" class="nav-link <?php echo is_active('transactions.php'); ?>"><i class="nav-icon fas fa-exchange-alt"></i> All Transactions</a></li>
                             <li class="nav-item"><a href="manual-deposits.php" class="nav-link <?php echo is_active('manual-deposits.php'); ?>"><i class="nav-icon fas fa-university"></i> Manual Deposits</a></li>

@@ -8,7 +8,7 @@ echo "Cron Job: Checking status of pending Sender IDs...\n";
 
 // 1. Fetch all pending sender IDs
 $pending_ids = [];
-$stmt = $conn->prepare("SELECT id, sender_id FROM sender_ids WHERE status = 'pending'");
+$stmt = $conn->prepare("SELECT id, sender_id, type FROM sender_ids WHERE status = 'pending'");
 if ($stmt) {
     $stmt->execute();
     $result = $stmt->get_result();
@@ -29,10 +29,15 @@ echo "Found " . count($pending_ids) . " pending Sender ID(s) to check.\n";
 foreach ($pending_ids as $item) {
     $record_id = $item['id'];
     $sender_id = $item['sender_id'];
+    $type = $item['type'] ?? 'sms';
 
-    echo "Checking: $sender_id (ID: $record_id)... ";
+    echo "Checking: $sender_id (Type: $type, ID: $record_id)... ";
 
-    $api_result = check_sender_id_api($sender_id);
+    if ($type === 'otp') {
+        $api_result = check_otp_sender_id_api($sender_id);
+    } else {
+        $api_result = check_sms_sender_id_api($sender_id);
+    }
 
     if ($api_result['success']) {
         // API call was successful, now check the message

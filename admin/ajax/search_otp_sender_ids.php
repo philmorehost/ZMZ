@@ -18,7 +18,7 @@ $sql = "SELECT s.id, s.sender_id, s.sample_message, s.status, s.created_at, u.us
         JOIN users u ON s.user_id = u.id";
 $count_sql = "SELECT COUNT(s.id) as total FROM sender_ids s JOIN users u ON s.user_id = u.id";
 
-$where_clauses = ["s.type = 'sms'"];
+$where_clauses = ["s.type = 'otp'"];
 $params = [];
 $types = '';
 
@@ -68,7 +68,7 @@ $stmt->close();
 
 $html = '';
 if (empty($submissions)) {
-    $html = '<tr><td colspan="6" class="text-center">No Sender ID submissions found.</td></tr>';
+    $html = '<tr><td colspan="6" class="text-center">No OTP Sender ID submissions found.</td></tr>';
 } else {
     foreach ($submissions as $sub) {
         $html .= '<tr>';
@@ -86,12 +86,12 @@ if (empty($submissions)) {
 
         $html .= '<td>';
         if ($sub['status'] == 'pending') {
-            $html .= '<form action="sender-ids.php" method="POST" class="d-inline">';
+            $html .= '<form action="otp-sender-ids.php" method="POST" class="d-inline">';
             $html .= '<input type="hidden" name="id" value="' . $sub['id'] . '">';
             $html .= '<input type="hidden" name="status" value="approved">';
             $html .= '<button type="submit" name="update_status" class="btn btn-success btn-sm">Approve</button>';
             $html .= '</form>';
-            $html .= '<form action="sender-ids.php" method="POST" class="d-inline">';
+            $html .= '<form action="otp-sender-ids.php" method="POST" class="d-inline">';
             $html .= '<input type="hidden" name="id" value="' . $sub['id'] . '">';
             $html .= '<input type="hidden" name="status" value="rejected">';
             $html .= '<button type="submit" name="update_status" class="btn btn-danger btn-sm">Reject</button>';
@@ -122,3 +122,4 @@ if ($total_pages > 1) {
 
 header('Content-Type: application/json');
 echo json_encode(['success' => true, 'html' => $html, 'pagination' => $pagination_html]);
+?>
