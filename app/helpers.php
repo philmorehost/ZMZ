@@ -709,7 +709,7 @@ function submit_otp_sender_id_api($sender_id, $sample_message) {
     $params = [
         'api_key' => $termii_api_key,
         'sender_id' => $sender_id,
-        'usecase' => $sample_message,
+        'useCase' => $sample_message,
         'company' => $settings['site_name'] ?? 'PhilmoreSMS'
     ];
 
