@@ -734,8 +734,13 @@ function submit_otp_sender_id_api($sender_id, $sample_message) {
     if ($http_code == 200 || $http_code == 201) {
         return ['success' => true, 'message' => $api_result['message'] ?? 'OTP Sender ID submitted successfully.', 'data' => $api_result];
     } else {
-        $error_msg = $api_result['message'] ?? 'An unknown error occurred with the OTP Sender ID API.';
-        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
+        $error_msg = $api_result['message'] ?? 'An unknown error occurred.';
+        if (is_array($error_msg)) {
+            $error_msg = json_encode($error_msg);
+        }
+        // Log the detailed error for administrative debugging
+        error_log("OTP Sender ID Gateway Error (HTTP $http_code): " . $response);
+        return ['success' => false, 'message' => "Gateway Error: " . $error_msg, 'data' => $api_result];
     }
 }
 
