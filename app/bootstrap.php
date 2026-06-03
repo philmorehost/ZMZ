@@ -83,6 +83,12 @@ function run_migrations($conn) {
       UNIQUE KEY `migration` (`migration`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // Self-healing check for type column in sender_ids table
+    $check_type = $conn->query("SHOW COLUMNS FROM `sender_ids` LIKE 'type'");
+    if ($check_type && $check_type->num_rows == 0) {
+        $conn->query("ALTER TABLE `sender_ids` ADD COLUMN `type` ENUM('sms', 'otp') NOT NULL DEFAULT 'sms' AFTER `status`");
+    }
+
     $migrations_ran = [];
     $stmt_migrations = $conn->prepare("SELECT migration FROM migrations");
     if ($stmt_migrations) {
