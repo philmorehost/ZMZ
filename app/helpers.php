@@ -641,53 +641,85 @@ function set_callback_url_api($callback_url) {
 
 function submit_sender_id_api($sender_id, $sample_message) {
     $settings = get_settings();
-    $api_key = $settings['kudisms_api_key_senderid'] ?? '';
-    if (empty($api_key)) return ['success' => false, 'message' => 'Sender ID API key is not configured by the administrator.'];
-    $api_url = "https://my.kudisms.net/api/senderID";
-    $post_data = ['token' => $api_key, 'senderID' => $sender_id, 'message' => $sample_message];
+    $termii_api_key = $settings['termii_api_key'] ?? '';
+    if (empty($termii_api_key)) {
+        return ['success' => false, 'message' => 'Termii API Key is not configured by the administrator.'];
+    }
+
+    $params = [
+        'api_key' => $termii_api_key,
+        'sender_id' => $sender_id,
+        'usecase' => $sample_message,
+        'company' => $settings['site_name'] ?? 'PhilmoreSMS'
+    ];
+
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_URL, 'https://v3.api.termii.com/api/sender-id/request');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_data));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curl_error = curl_error($ch);
     curl_close($ch);
-    if ($response === false) return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+
+    if ($response === false) {
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+    }
+
     $api_result = json_decode($response, true);
     if (!is_array($api_result)) $api_result = [];
-    if ($http_code == 200 && isset($api_result['status']) && $api_result['status'] == 'success') {
-        return ['success' => true, 'message' => $api_result['msg'] ?? 'Sender ID submitted successfully.', 'data' => $api_result];
+
+    if ($http_code == 200 || $http_code == 201) {
+        return ['success' => true, 'message' => $api_result['message'] ?? 'Sender ID submitted successfully.', 'data' => $api_result];
     } else {
-        $error_msg = $api_result['msg'] ?? 'An unknown error occurred with the Sender ID API.';
-        return ['success' => false, 'message' => "API Error: " . $error_msg, 'data' => $api_result];
+        $error_msg = $api_result['message'] ?? 'An unknown error occurred with the Sender ID API.';
+        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
     }
 }
 
 function check_sender_id_api($sender_id) {
     $settings = get_settings();
-    $api_key = $settings['kudisms_api_key_senderid'] ?? '';
-    if (empty($api_key)) return ['success' => false, 'message' => 'Sender ID API key is not configured by the administrator.'];
-    $api_url = "https://my.kudisms.net/api/check_senderID";
-    $query_params = http_build_query(['token' => $api_key, 'senderID' => $sender_id]);
-    $full_url = $api_url . "?" . $query_params;
+    $termii_api_key = $settings['termii_api_key'] ?? '';
+    if (empty($termii_api_key)) {
+        return ['success' => false, 'message' => 'Termii API Key is not configured by the administrator.'];
+    }
+
+    $url = 'https://v3.api.termii.com/api/sender-id?api_key=' . urlencode($termii_api_key);
+
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $full_url);
-    curl_setopt($ch, CURLOPT_HTTPGET, true);
+    curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curl_error = curl_error($ch);
     curl_close($ch);
-    if ($response === false) return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+
+    if ($response === false) {
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+    }
+
     $api_result = json_decode($response, true);
     if (!is_array($api_result)) $api_result = [];
-    if ($http_code == 200 && isset($api_result['status']) && $api_result['status'] == 'success') {
-        return ['success' => true, 'message' => $api_result['msg'] ?? 'Status checked successfully.', 'data' => $api_result];
+
+    if ($http_code == 200 && isset($api_result['content']) && is_array($api_result['content'])) {
+        foreach ($api_result['content'] as $item) {
+            if (isset($item['sender_id']) && strcasecmp($item['sender_id'], $sender_id) === 0) {
+                $status = strtolower($item['status'] ?? 'pending');
+                $mapped_message = 'pending';
+                if ($status === 'active') {
+                    $mapped_message = 'approved';
+                } elseif ($status === 'blocked' || $status === 'rejected') {
+                    $mapped_message = 'rejected';
+                }
+                return ['success' => true, 'message' => $mapped_message, 'data' => $item];
+            }
+        }
+        return ['success' => true, 'message' => 'not found', 'data' => []];
     } else {
-        $error_msg = $api_result['msg'] ?? 'Could not check Sender ID status.';
-        return ['success' => false, 'message' => "API Error: " . $error_msg, 'data' => $api_result];
+        $error_msg = $api_result['message'] ?? 'Could not check Sender ID status from Termii.';
+        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
     }
 }
 
