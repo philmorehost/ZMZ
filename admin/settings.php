@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_api_settings'])) 
     $settings_to_update = [];
     $api_keys = [
         'kudisms_api_key_sms', 'kudisms_api_key_senderid', 'kudisms_api_key_tts',
-        'otp_api_key'
+        'otp_api_key', 'termii_api_key', 'termii_sender_id'
     ];
 
     foreach ($api_keys as $key) {
@@ -784,10 +784,14 @@ include 'includes/header.php';
                         <input type="password" class="form-control" id="kudisms_api_key_senderid" name="kudisms_api_key_senderid" value="<?php echo htmlspecialchars($settings['kudisms_api_key_senderid'] ?? ''); ?>">
                     </div>
                     <hr>
-                    <h5 class="mt-4">OTP Gateway API</h5>
+                    <h5 class="mt-4">OTP Gateway API (Termii)</h5>
                     <div class="mb-3">
-                        <label for="otp_api_key" class="form-label">OTP API Key</label>
-                        <input type="password" class="form-control" id="otp_api_key" name="otp_api_key" value="<?php echo htmlspecialchars($settings['otp_api_key'] ?? ''); ?>">
+                        <label for="termii_api_key" class="form-label">Termii API Key</label>
+                        <input type="password" class="form-control" id="termii_api_key" name="termii_api_key" value="<?php echo htmlspecialchars($settings['termii_api_key'] ?? ''); ?>">
+                    </div>
+                    <div class="mb-3">
+                        <label for="termii_sender_id" class="form-label">Termii Sender ID</label>
+                        <input type="text" class="form-control" id="termii_sender_id" name="termii_sender_id" value="<?php echo htmlspecialchars($settings['termii_sender_id'] ?? ''); ?>">
                     </div>
                     <button type="submit" name="save_api_settings" class="btn btn-primary">Save API Settings</button>
                 </form>

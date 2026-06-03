@@ -927,27 +927,42 @@ function send_otp($user, $sender_id, $recipients, $otp, $template_code, $conn) {
         return ['success' => false, 'message' => 'Insufficient balance.'];
     }
 
-    $api_token = $settings['otp_api_key'] ?? $settings['kudisms_api_key_sms'] ?? '';
-    if (empty($api_token)) {
-        return ['success' => false, 'message' => 'OTP API is not configured by the administrator.'];
+    $termii_api_key = $settings['termii_api_key'] ?? '';
+    if (empty($termii_api_key)) {
+        return ['success' => false, 'message' => 'Termii OTP API is not configured by the administrator.'];
     }
-    
-    $exploded_key_parts = array_filter(explode(":", trim($api_token)));
-    $api_token = $exploded_key_parts[0];
+
+    // Resolve template
+    $message_text = "Your OTP is " . $otp;
+    if (!empty($template_code)) {
+        $stmt_tpl = $conn->prepare("SELECT template_body FROM otp_templates WHERE templatecode = ?");
+        if ($stmt_tpl) {
+            $stmt_tpl->bind_param("s", $template_code);
+            $stmt_tpl->execute();
+            $stmt_tpl->bind_result($template_body);
+            if ($stmt_tpl->fetch()) {
+                $message_text = str_replace("[OTP]", $otp, $template_body);
+            }
+            $stmt_tpl->close();
+        }
+    }
+
+    $to = count($recipient_numbers) === 1 ? $recipient_numbers[0] : $recipient_numbers;
 
     $params = [
-        'token' => $api_token,
-        'senderID' => $sender_id,
-        'recipients' => $recipients,
-        'otp' => $otp,
-        'appnamecode' => $settings['site_name'] ?? 'PhilmoreSMS',
-        'templatecode' => $template_code
+        'api_key' => $termii_api_key,
+        'to' => $to,
+        'from' => !empty($sender_id) ? $sender_id : ($settings['termii_sender_id'] ?? ''),
+        'sms' => $message_text,
+        'type' => 'plain',
+        'channel' => 'dnd'
     ];
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://my.kudisms.net/api/otp');
+    curl_setopt($ch, CURLOPT_URL, 'https://v3.api.termii.com/api/sms/send');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -961,7 +976,7 @@ function send_otp($user, $sender_id, $recipients, $otp, $template_code, $conn) {
     $api_result = json_decode($response, true);
     if (!is_array($api_result)) $api_result = [];
 
-    if ($http_code == 200 && isset($api_result['status']) && $api_result['status'] == 'success') {
+    if (($http_code == 200 || $http_code == 201) && (isset($api_result['message_id']) || (isset($api_result['message']) && stripos($api_result['message'], 'Successfully') !== false))) {
         $conn->begin_transaction();
         try {
             $stmt_balance = $conn->prepare("UPDATE users SET balance = balance - ? WHERE id = ?");
@@ -969,9 +984,9 @@ function send_otp($user, $sender_id, $recipients, $otp, $template_code, $conn) {
             $stmt_balance->execute();
             $stmt_balance->close();
 
-            $message_summary = "Pre-generated OTP sent via API. Verification ID: " . ($api_result['verification_id'] ?? 'N/A');
+            $message_summary = "Pre-generated OTP sent via Termii. Message: " . $message_text;
             $stmt_log = $conn->prepare("INSERT INTO messages (user_id, sender_id, recipients, message, cost, status, type, api_response) VALUES (?, ?, ?, ?, ?, 'success', 'sms_debit', ?)");
-            $stmt_log->bind_param("isssds", $user['id'], $sender_id, $recipients, $message_summary, $total_cost, $response);
+            $stmt_log->bind_param("isssds", $user['id'], $params['from'], $recipients, $message_summary, $total_cost, $response);
             $stmt_log->execute();
             $stmt_log->close();
 
@@ -982,31 +997,65 @@ function send_otp($user, $sender_id, $recipients, $otp, $template_code, $conn) {
             return ['success' => false, 'message' => 'Database error during transaction: ' . $e->getMessage()];
         }
     } else {
-        $error_msg = $api_result['msg'] ?? 'An unknown error occurred with the OTP gateway.';
-        return ['success' => false, 'message' => "API Error: " . $error_msg, 'data' => $api_result];
+        $error_msg = $api_result['message'] ?? 'An unknown error occurred with the Termii SMS gateway.';
+        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
     }
 }
 
-function verify_otp($user, $verification_id, $otp, $conn) {
+function send_termii_generated_otp($user, $sender_id, $recipients, $template_code, $otp_type, $otp_length, $otp_duration, $otp_attempts, $channel, $conn) {
     $settings = get_settings();
-    $api_token = $settings['otp_api_key'] ?? $settings['kudisms_api_key_sms'] ?? '';
-    if (empty($api_token)) {
-        return ['success' => false, 'message' => 'OTP API is not configured by the administrator.'];
+    $price_otp = (float)($settings['price_otp'] ?? 5.0);
+    $recipient_numbers = filter_phone_numbers($recipients);
+    if (empty($recipient_numbers)) {
+        return ['success' => false, 'message' => 'No valid recipient phone numbers found.'];
     }
-    
-    $exploded_key_parts = array_filter(explode(":", trim($api_token)));
-    $api_token = $exploded_key_parts[0];
+    $total_cost = count($recipient_numbers) * $price_otp;
+
+    if ($user['balance'] < $total_cost) {
+        return ['success' => false, 'message' => 'Insufficient balance.'];
+    }
+
+    $termii_api_key = $settings['termii_api_key'] ?? '';
+    if (empty($termii_api_key)) {
+        return ['success' => false, 'message' => 'Termii OTP API is not configured by the administrator.'];
+    }
+
+    $to_number = $recipient_numbers[0];
+
+    $message_text = "Your OTP is < 1234 >";
+    $pin_placeholder = "< 1234 >";
+    if (!empty($template_code)) {
+        $stmt_tpl = $conn->prepare("SELECT template_body FROM otp_templates WHERE templatecode = ?");
+        if ($stmt_tpl) {
+            $stmt_tpl->bind_param("s", $template_code);
+            $stmt_tpl->execute();
+            $stmt_tpl->bind_result($template_body);
+            if ($stmt_tpl->fetch()) {
+                $message_text = str_replace("[OTP]", "< 1234 >", $template_body);
+                $pin_placeholder = "< 1234 >";
+            }
+            $stmt_tpl->close();
+        }
+    }
 
     $params = [
-        'token' => $api_token,
-        'verification_id' => $verification_id,
-        'otp' => $otp
+        'api_key' => $termii_api_key,
+        'pin_type' => strtoupper($otp_type) === 'ALPHANUMERIC' ? 'ALPHANUMERIC' : 'NUMERIC',
+        'to' => $to_number,
+        'from' => !empty($sender_id) ? $sender_id : ($settings['termii_sender_id'] ?? ''),
+        'channel' => strtolower($channel) === 'generic' ? 'generic' : 'dnd',
+        'pin_attempts' => (int)$otp_attempts,
+        'pin_time_to_live' => (int)$otp_duration,
+        'pin_length' => (int)$otp_length,
+        'pin_placeholder' => $pin_placeholder,
+        'message_text' => $message_text
     ];
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://my.kudisms.net/api/verifyotp');
+    curl_setopt($ch, CURLOPT_URL, 'https://v3.api.termii.com/api/sms/otp/send');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -1020,12 +1069,80 @@ function verify_otp($user, $verification_id, $otp, $conn) {
     $api_result = json_decode($response, true);
     if (!is_array($api_result)) $api_result = [];
 
-    if ($http_code == 200 && isset($api_result['status']) && $api_result['status'] == 'success') {
+    if (($http_code == 200 || $http_code == 201) && isset($api_result['pinId'])) {
+        $conn->begin_transaction();
+        try {
+            $stmt_balance = $conn->prepare("UPDATE users SET balance = balance - ? WHERE id = ?");
+            $stmt_balance->bind_param("di", $total_cost, $user['id']);
+            $stmt_balance->execute();
+            $stmt_balance->close();
+
+            $verification_id = $api_result['pinId'];
+            $message_summary = "Termii OTP sent. Pin ID: " . $verification_id;
+            $stmt_log = $conn->prepare("INSERT INTO messages (user_id, sender_id, recipients, message, cost, status, type, api_response) VALUES (?, ?, ?, ?, ?, 'success', 'sms_debit', ?)");
+            $stmt_log->bind_param("isssds", $user['id'], $params['from'], $to_number, $message_summary, $total_cost, $response);
+            $stmt_log->execute();
+            $stmt_log->close();
+
+            $conn->commit();
+            return [
+                'success' => true,
+                'message' => 'OTP sent successfully.',
+                'verification_id' => $verification_id,
+                'cost' => $total_cost,
+                'data' => $api_result
+            ];
+        } catch (Exception $e) {
+            $conn->rollback();
+            return ['success' => false, 'message' => 'Database error during transaction: ' . $e->getMessage()];
+        }
+    } else {
+        $error_msg = $api_result['message'] ?? 'An unknown error occurred with the Termii OTP gateway.';
+        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
+    }
+}
+
+function verify_termii_generated_otp($user, $verification_id, $otp, $conn) {
+    $settings = get_settings();
+    $termii_api_key = $settings['termii_api_key'] ?? '';
+    if (empty($termii_api_key)) {
+        return ['success' => false, 'message' => 'Termii OTP API is not configured by the administrator.'];
+    }
+
+    $params = [
+        'api_key' => $termii_api_key,
+        'pin_id' => $verification_id,
+        'pin' => $otp
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://v3.api.termii.com/api/sms/otp/verify');
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['success' => false, 'message' => "cURL Error: " . $curl_error];
+    }
+
+    $api_result = json_decode($response, true);
+    if (!is_array($api_result)) $api_result = [];
+
+    if (($http_code == 200 || $http_code == 201) && isset($api_result['verified']) && $api_result['verified'] === true) {
         return ['success' => true, 'message' => 'OTP verified successfully.', 'data' => $api_result];
     } else {
-        $error_msg = $api_result['msg'] ?? 'OTP verification failed.';
-        return ['success' => false, 'message' => "API Error: " . $error_msg, 'data' => $api_result];
+        $error_msg = $api_result['message'] ?? 'OTP verification failed or token has expired.';
+        return ['success' => false, 'message' => "Termii API Error: " . $error_msg, 'data' => $api_result];
     }
+}
+
+function verify_otp($user, $verification_id, $otp, $conn) {
+    return verify_termii_generated_otp($user, $verification_id, $otp, $conn);
 }
 
 ?>
