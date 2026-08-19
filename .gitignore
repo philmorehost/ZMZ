@@ -31,6 +31,10 @@ SMS-Native-Android/keystore.properties
 *.aab
 android-builds/
 
+# Local database dumps (may contain user data)
+appsms_portal.sql
+/*.sql
+
 # OS / editor files
 .DS_Store
 Thumbs.db

@@ -6,5 +6,6 @@ import androidx.annotation.Keep
 @Keep
 data class Stats(
     @SerializedName("balance") val balance: Double,
-    @SerializedName("username") val username: String? = null
+    @SerializedName("username") val username: String? = null,
+    @SerializedName("messages_sent") val messagesSent: Int? = null
 )

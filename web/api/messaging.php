@@ -55,6 +55,23 @@ if ($action === 'send_sms') {
     } else {
         mobile_api_error($result['message']);
     }
+} elseif ($action === 'send_otp') {
+    $sender_id = $_POST['senderID'] ?? '';
+    $recipients = $_POST['recipients'] ?? '';
+    $otp = $_POST['otp'] ?? '';
+    $template_code = $_POST['template_code'] ?? '';
+
+    if (empty($sender_id) || empty($recipients) || empty($otp)) {
+        mobile_api_error('Missing required parameters');
+    }
+
+    $result = send_otp($user, $sender_id, $recipients, $otp, $template_code, $conn);
+
+    if ($result['success']) {
+        mobile_api_success(['result' => $result], $result['message']);
+    } else {
+        mobile_api_error($result['message']);
+    }
 } else {
     mobile_api_error('Invalid action');
 }
