@@ -93,6 +93,9 @@ jobs:
   build-ios:
     name: Compile iOS App (React Native)
     runs-on: macos-14
+    needs: build-android
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -134,3 +137,13 @@ jobs:
         with:
           name: ios-simulator-app
           path: SMS-iOS/ios/PhilmoreSMS-Sim.zip
+
+      - name: Upload iOS App to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: SMS-iOS/ios
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.$(git rev-list --count HEAD)"
+          echo "Uploading iOS build to release $TAG"
+          gh release upload "$TAG" PhilmoreSMS-Sim.zip --clobber
