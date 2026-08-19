@@ -19,6 +19,16 @@ composer-setup.php
 # User uploaded content
 uploads/
 
+# Android signing keystore (contains private keys)
+SMS-Native-Android/keystore.properties
+*.jks
+*.keystore
+
+# Build artifacts
+**/.gradle/
+*.apk
+*.aab
+
 # OS / editor files
 .DS_Store
 Thumbs.db

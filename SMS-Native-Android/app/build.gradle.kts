@@ -1,4 +1,6 @@
 // SMS-Native-Android/app/build.gradle.kts
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -23,12 +25,19 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = file("philmoresms-release.jks")
-            if (keystoreFile.exists()) {
+            val keystoreProperties = Properties().apply {
+                val propsFile = rootProject.file("keystore.properties")
+                if (propsFile.exists()) {
+                    propsFile.inputStream().use { load(it) }
+                }
+            }
+            val storeFileProp = keystoreProperties.getProperty("storeFile")
+            val keystoreFile = if (storeFileProp != null) file(storeFileProp) else null
+            if (keystoreFile != null && keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = "philmore123"
-                keyAlias = "philmore-key"
-                keyPassword = "philmore123"
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
             }
         }
     }
