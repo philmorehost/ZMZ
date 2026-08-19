@@ -6,6 +6,21 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Auto-increment the app version from the git commit count, so it bumps on every push/update.
+fun gitCommitCount(): Int {
+    return try {
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD")
+            .directory(rootProject.projectDir)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        process.waitFor()
+        output.toInt().coerceAtLeast(1)
+    } catch (e: Exception) {
+        1
+    }
+}
+
 android {
     namespace = "com.philmoresms.app"
     compileSdk = 36
@@ -14,8 +29,9 @@ android {
         applicationId = "com.philmoresms.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        val commitCount = gitCommitCount()
+        versionCode = commitCount
+        versionName = "1.0.$commitCount"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

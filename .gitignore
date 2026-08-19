@@ -23,6 +23,7 @@ uploads/
 SMS-Native-Android/keystore.properties
 *.jks
 *.keystore
+*.p12
 
 # Build artifacts
 **/.gradle/

@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-android:
-    name: Build Android APK (Kotlin)
+    name: Build Android APK & AAB (Kotlin)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -25,6 +25,25 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x SMS-Native-Android/gradlew
 
+      - name: Set up Android signing keystore
+        working-directory: SMS-Native-Android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > app/philmore-sms.p12
+            echo "storeFile=philmore-sms.p12" > keystore.properties
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> keystore.properties
+            echo "keyAlias=$ANDROID_KEY_ALIAS" >> keystore.properties
+            echo "keyPassword=$ANDROID_KEY_PASSWORD" >> keystore.properties
+            echo "::notice::Android release signing configured from secrets"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set - building unsigned APK/AAB"
+          fi
+
       - name: Build Android Release APK & AAB
         working-directory: SMS-Native-Android
         run: ./gradlew assembleRelease bundleRelease --no-daemon
@@ -33,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
-          path: SMS-Native-Android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: SMS-Native-Android/app/build/outputs/apk/release/app-release*.apk
 
       - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
