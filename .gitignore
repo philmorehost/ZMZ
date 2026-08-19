@@ -1,5 +1,26 @@
-/logs/
-/uploads/
+# Local configuration — contains database credentials
+app/config.php
+
+# Runtime logs
+logs/
+cron/error_log
+api/error_log
+ajax/error_log
+web/api/error_log
+**/error_log
 *.log
+
+# Runtime / install state
+app/install.lock
+
+# Installer scripts
+composer-setup.php
+
+# User uploaded content
+uploads/
+
+# OS / editor files
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
