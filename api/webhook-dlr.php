@@ -6,11 +6,18 @@
 require_once __DIR__ . '/../app/config.php';
 
 // --- Database Connection ---
-$conn = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
-if ($conn->connect_error) {
-    http_response_code(500);
-    error_log("DLR Webhook: Database Connection Failed: " . $conn->connect_error);
-    exit("Database connection error.");
+try {
+    $conn = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
+    if ($conn->connect_error) {
+        // PHP < 8.1: connection failure is signalled via connect_error
+        throw new RuntimeException("Database connection failed: " . $conn->connect_error);
+    }
+} catch (RuntimeException $e) {
+    // PHP 8.1+ throws mysqli_sql_exception (subclass of RuntimeException)
+    // e.g. "Too many connections". Fail fast with 503 so the gateway retries.
+    error_log("DLR Webhook: Database Connection Failed: " . $e->getMessage());
+    http_response_code(503);
+    exit("Service temporarily unavailable. Please retry.");
 }
 
 // Get the raw POST data
