@@ -9,6 +9,7 @@ import com.philmoresms.app.network.ErrorUtils
 import com.philmoresms.app.network.RetrofitClient
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import retrofit2.await
 
 class LoginViewModel : ViewModel() {
     var login by mutableStateOf("")
@@ -28,7 +29,7 @@ class LoginViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val body = RetrofitClient.apiService.login(login, password)
+                val body = RetrofitClient.apiService.login(login, password).await()
                 if (body.status == "success") {
                     body.token?.let {
                         RetrofitClient.setToken(it)

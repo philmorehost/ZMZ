@@ -10,6 +10,7 @@ import com.philmoresms.app.network.ErrorUtils
 import com.philmoresms.app.network.RetrofitClient
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import retrofit2.await
 
 class DashboardViewModel : ViewModel() {
     var data by mutableStateOf<BaseResponse?>(null)
@@ -21,7 +22,7 @@ class DashboardViewModel : ViewModel() {
         error = null
         viewModelScope.launch {
             try {
-                data = RetrofitClient.apiService.getSummary()
+                data = RetrofitClient.apiService.getSummary().await()
             } catch (e: HttpException) {
                 error = ErrorUtils.getErrorMessage(e) ?: "Failed to fetch dashboard data (HTTP ${e.code()})"
             } catch (e: Exception) {

@@ -1,5 +1,6 @@
 package com.philmoresms.app.network
 
+import retrofit2.Call
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.POST
@@ -10,26 +11,26 @@ interface PhilmoreApiService {
 
     @FormUrlEncoded
     @POST("auth.php?action=login")
-    suspend fun login(
+    fun login(
         @Field("login") login: String,
         @Field("password") password: String
-    ): BaseResponse
+    ): Call<BaseResponse>
 
     @POST("dashboard.php")
-    suspend fun getSummary(): BaseResponse
+    fun getSummary(): Call<BaseResponse>
 
     @FormUrlEncoded
     @POST("auth.php?action=register")
-    suspend fun register(
+    fun register(
         @Field("username") username: String,
         @Field("email") email: String,
         @Field("password") password: String,
         @Field("phone") phone: String
-    ): BaseResponse
+    ): Call<BaseResponse>
 
     @FormUrlEncoded
     @POST("auth.php?action=forgot_password")
-    suspend fun forgotPassword(
+    fun forgotPassword(
         @Field("email") email: String
-    ): BaseResponse
+    ): Call<BaseResponse>
 }
