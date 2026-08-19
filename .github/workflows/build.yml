@@ -11,6 +11,8 @@ jobs:
   build-android:
     name: Build Android APK & AAB (Kotlin)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -59,6 +61,34 @@ jobs:
         with:
           name: android-release-aab
           path: SMS-Native-Android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Read built version
+        id: version
+        working-directory: SMS-Native-Android
+        run: |
+          VERSION_CODE=$(jq -r '.elements[0].versionCode' app/build/outputs/apk/release/output-metadata.json)
+          VERSION_NAME=$(jq -r '.elements[0].versionName' app/build/outputs/apk/release/output-metadata.json)
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES="Automated release built from commit ${{ github.sha }}
+          - versionCode: ${{ steps.version.outputs.version_code }}
+          - versionName: ${{ steps.version.outputs.version_name }}"
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Release ${{ steps.version.outputs.tag }} already exists; skipping."
+          else
+            gh release create "${{ steps.version.outputs.tag }}" \
+              --title "PhilmoreSMS ${{ steps.version.outputs.version_name }}" \
+              --notes "$NOTES" \
+              SMS-Native-Android/app/build/outputs/apk/release/app-release*.apk \
+              SMS-Native-Android/app/build/outputs/bundle/release/app-release.aab
+          fi
 
   build-ios:
     name: Compile iOS App (React Native)
