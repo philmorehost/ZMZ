@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.philmoresms.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.philmoresms.app"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 

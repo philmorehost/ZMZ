@@ -25,15 +25,21 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x SMS-Native-Android/gradlew
 
-      - name: Build Android Release APK
+      - name: Build Android Release APK & AAB
         working-directory: SMS-Native-Android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
           path: SMS-Native-Android/app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab
+          path: SMS-Native-Android/app/build/outputs/bundle/release/app-release.aab
 
   build-ios:
     name: Compile iOS App (React Native)
