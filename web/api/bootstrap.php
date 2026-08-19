@@ -23,7 +23,14 @@ function mobile_api_success($data = [], $message = 'Success') {
 }
 
 function mobile_authenticate($conn) {
-    $token = $_SERVER['HTTP_AUTHORIZATION'] ?? $_POST['token'] ?? $_GET['token'] ?? '';
+    // Read the Authorization header from multiple sources: some servers (Apache/LiteSpeed)
+    // don't populate HTTP_AUTHORIZATION directly.
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $auth_header = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? ($headers['Authorization'] ?? $headers['authorization'] ?? '')
+        ?? '';
+    $token = $auth_header ?: ($_POST['token'] ?? $_GET['token'] ?? '');
     if (strpos($token, 'Bearer ') === 0) {
         $token = substr($token, 7);
     }

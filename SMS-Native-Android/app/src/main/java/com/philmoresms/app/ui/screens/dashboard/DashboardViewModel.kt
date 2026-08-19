@@ -6,8 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.philmoresms.app.network.BaseResponse
+import com.philmoresms.app.network.ErrorUtils
 import com.philmoresms.app.network.RetrofitClient
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class DashboardViewModel : ViewModel() {
     var data by mutableStateOf<BaseResponse?>(null)
@@ -19,12 +21,9 @@ class DashboardViewModel : ViewModel() {
         error = null
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.getSummary()
-                if (response.isSuccessful) {
-                    data = response.body()
-                } else {
-                    error = "Failed to fetch dashboard data"
-                }
+                data = RetrofitClient.apiService.getSummary()
+            } catch (e: HttpException) {
+                error = ErrorUtils.getErrorMessage(e) ?: "Failed to fetch dashboard data (HTTP ${e.code()})"
             } catch (e: Exception) {
                 error = e.message ?: "An unexpected error occurred"
             } finally {

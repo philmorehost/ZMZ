@@ -5,8 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.philmoresms.app.network.ErrorUtils
 import com.philmoresms.app.network.RetrofitClient
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 class LoginViewModel : ViewModel() {
     var login by mutableStateOf("")
@@ -26,18 +28,20 @@ class LoginViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.apiService.login(login, password)
-                if (response.isSuccessful && response.body()?.status == "success") {
-                    response.body()?.token?.let {
+                val body = RetrofitClient.apiService.login(login, password)
+                if (body.status == "success") {
+                    body.token?.let {
                         RetrofitClient.setToken(it)
                     }
                     loginSuccess = true
                 } else {
-                    error = response.body()?.message ?: "Login failed (Server Error)"
+                    error = body.message ?: "Login failed"
                 }
+            } catch (e: HttpException) {
+                error = ErrorUtils.getErrorMessage(e) ?: "Login failed (HTTP ${e.code()})"
             } catch (e: Exception) {
                 val msg = e.message ?: ""
-                error = if (msg.contains("JsonReader") || msg.contains("malformed")) {
+                error = if (msg.contains("JsonReader") || msg.contains("malformed") || msg.contains("ParameterizedType")) {
                     "Server Error: The server returned an invalid response. Please check your Database configuration in app/config.php."
                 } else {
                     msg.ifBlank { "Network Error: Please check your internet connection" }

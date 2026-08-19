@@ -29,6 +29,7 @@ SMS-Native-Android/keystore.properties
 **/.gradle/
 *.apk
 *.aab
+android-builds/
 
 # OS / editor files
 .DS_Store
