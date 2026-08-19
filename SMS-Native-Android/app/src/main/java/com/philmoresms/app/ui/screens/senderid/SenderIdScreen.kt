@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ class SenderIdViewModel : ViewModel() {
 
     var newSenderId by mutableStateOf("")
     var sampleMessage by mutableStateOf("")
+    var type by mutableStateOf("sms")
 
     init { load() }
 
@@ -64,7 +66,7 @@ class SenderIdViewModel : ViewModel() {
         success = null
         viewModelScope.launch {
             try {
-                val res = RetrofitClient.apiService.requestSenderId(newSenderId, sampleMessage).await()
+                val res = RetrofitClient.apiService.requestSenderId(newSenderId, sampleMessage, type).await()
                 success = res.message ?: "Sender ID request submitted"
                 newSenderId = ""
                 sampleMessage = ""
@@ -78,6 +80,7 @@ class SenderIdViewModel : ViewModel() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SenderIdScreen(navController: NavController) {
     val viewModel: SenderIdViewModel = viewModel()
@@ -89,6 +92,11 @@ fun SenderIdScreen(navController: NavController) {
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
         ) {
             Text("Register a Sender ID", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary, modifier = Modifier.padding(bottom = 16.dp))
+            Text("Type", fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 16.dp)) {
+                FilterChip(selected = viewModel.type == "sms", onClick = { viewModel.type = "sms" }, label = { Text("SMS") })
+                FilterChip(selected = viewModel.type == "otp", onClick = { viewModel.type = "otp" }, label = { Text("OTP") })
+            }
             FintechInput("Sender ID (max 11 chars)", viewModel.newSenderId, { viewModel.newSenderId = it })
             FintechInput("Sample Message", viewModel.sampleMessage, { viewModel.sampleMessage = it })
 

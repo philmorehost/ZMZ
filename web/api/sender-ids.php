@@ -8,7 +8,7 @@ $action = $_GET['action'] ?? 'list';
 
 if ($action === 'list') {
     $sender_ids = [];
-    $stmt = $conn->prepare("SELECT id, sender_id, status, created_at FROM sender_ids WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt = $conn->prepare("SELECT id, sender_id, status, type, created_at FROM sender_ids WHERE user_id = ? ORDER BY created_at DESC");
     $stmt->bind_param("i", $user['id']);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -18,9 +18,23 @@ if ($action === 'list') {
     $stmt->close();
 
     mobile_api_success(['sender_ids' => $sender_ids]);
+} elseif ($action === 'corporate_list') {
+    $corporate = [];
+    $stmt = $conn->prepare("SELECT id, sender_id, status FROM corporate_sender_ids WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt->bind_param("i", $user['id']);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $corporate[] = $row;
+    }
+    $stmt->close();
+
+    mobile_api_success(['corporate_sender_ids' => $corporate]);
 } elseif ($action === 'request') {
     $sender_id = $_POST['senderID'] ?? '';
     $sample_message = $_POST['message'] ?? '';
+    $type = $_POST['type'] ?? 'sms';
+    if (!in_array($type, ['sms', 'otp'], true)) $type = 'sms';
 
     if (empty($sender_id) || empty($sample_message)) {
         mobile_api_error('Sender ID and sample message are required');
@@ -30,8 +44,8 @@ if ($action === 'list') {
         mobile_api_error('Sender ID must be 11 characters or less');
     }
 
-    $stmt = $conn->prepare("INSERT INTO sender_ids (user_id, sender_id, sample_message, status) VALUES (?, ?, ?, 'pending')");
-    $stmt->bind_param("iss", $user['id'], $sender_id, $sample_message);
+    $stmt = $conn->prepare("INSERT INTO sender_ids (user_id, sender_id, sample_message, status, type) VALUES (?, ?, ?, 'pending', ?)");
+    $stmt->bind_param("isss", $user['id'], $sender_id, $sample_message, $type);
 
     if ($stmt->execute()) {
         mobile_api_success([], 'Sender ID request submitted');

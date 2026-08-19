@@ -29,5 +29,14 @@ if ($action === 'referrals') {
         $templates[] = $row;
     }
     mobile_api_success(['templates' => $templates]);
+} elseif ($action === 'sms_config') {
+    $settings = get_settings();
+    mobile_api_success([
+        'chars_1unit' => (int)($settings['sms_chars_1unit'] ?? 160),
+        'chars_multunit' => (int)($settings['sms_chars_multunit'] ?? 153),
+        'max_units' => (int)($settings['sms_max_units'] ?? 10)
+    ]);
+} else {
+    mobile_api_error('Invalid action');
 }
 ?>

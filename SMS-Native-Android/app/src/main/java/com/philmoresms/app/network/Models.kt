@@ -33,7 +33,22 @@ data class SenderId(
     @SerializedName("id") val id: String? = null,
     @SerializedName("sender_id") val senderId: String? = null,
     @SerializedName("status") val status: String? = null,
+    @SerializedName("type") val type: String? = null,
     @SerializedName("created_at") val createdAt: String? = null
+)
+
+@Keep
+data class CorporateSenderId(
+    @SerializedName("id") val id: String? = null,
+    @SerializedName("sender_id") val senderId: String? = null,
+    @SerializedName("status") val status: String? = null
+)
+
+@Keep
+data class SmsConfig(
+    @SerializedName("chars_1unit") val chars1Unit: Int? = null,
+    @SerializedName("chars_multunit") val charsMultUnit: Int? = null,
+    @SerializedName("max_units") val maxUnits: Int? = null
 )
 
 @Keep
@@ -89,6 +104,22 @@ data class SenderIdsResponse(
     @SerializedName("status") val status: String? = null,
     @SerializedName("message") val message: String? = null,
     @SerializedName("sender_ids") val senderIds: List<SenderId>? = null
+)
+
+@Keep
+data class CorporateSenderIdsResponse(
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("corporate_sender_ids") val corporateSenderIds: List<CorporateSenderId>? = null
+)
+
+@Keep
+data class SmsConfigResponse(
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("chars_1unit") val chars1Unit: Int? = null,
+    @SerializedName("chars_multunit") val charsMultUnit: Int? = null,
+    @SerializedName("max_units") val maxUnits: Int? = null
 )
 
 @Keep

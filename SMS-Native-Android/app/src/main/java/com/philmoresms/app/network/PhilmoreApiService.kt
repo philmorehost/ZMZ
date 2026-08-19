@@ -104,12 +104,20 @@ interface PhilmoreApiService {
     @GET("sender-ids.php?action=list")
     fun getSenderIds(): Call<SenderIdsResponse>
 
+    @GET("sender-ids.php?action=corporate_list")
+    fun getCorporateSenderIds(): Call<CorporateSenderIdsResponse>
+
     @FormUrlEncoded
     @POST("sender-ids.php?action=request")
     fun requestSenderId(
         @Field("senderID") senderId: String,
-        @Field("message") message: String
+        @Field("message") message: String,
+        @Field("type") type: String
     ): Call<BaseResponse>
+
+    // --- SMS config (char/unit rules, mirroring the website) ---
+    @GET("services.php?action=sms_config")
+    fun getSmsConfig(): Call<SmsConfigResponse>
 
     // --- OTP templates ---
     @GET("services.php?action=otp_templates")

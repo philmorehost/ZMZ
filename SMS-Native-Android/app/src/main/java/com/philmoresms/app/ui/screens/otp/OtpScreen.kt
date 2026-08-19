@@ -17,12 +17,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.philmoresms.app.network.ErrorUtils
-import com.philmoresms.app.network.OtpTemplate
-import com.philmoresms.app.network.RetrofitClient
+import com.philmoresms.app.network.*
 import com.philmoresms.app.ui.components.AppTopBar
 import com.philmoresms.app.ui.components.FintechButton
 import com.philmoresms.app.ui.components.FintechInput
+import com.philmoresms.app.ui.components.LabeledDropdown
 import com.philmoresms.app.ui.theme.*
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -30,6 +29,7 @@ import retrofit2.await
 import kotlin.random.Random
 
 class OtpViewModel : ViewModel() {
+    var senderIds by mutableStateOf<List<SenderId>>(emptyList())
     var senderId by mutableStateOf("")
     var recipients by mutableStateOf("")
     var otp by mutableStateOf(Random.nextInt(100000, 999999).toString())
@@ -39,21 +39,51 @@ class OtpViewModel : ViewModel() {
     var error by mutableStateOf<String?>(null)
     var success by mutableStateOf<String?>(null)
 
-    init {
-        loadTemplates()
-    }
+    var showRegister by mutableStateOf(false)
+    var newSenderId by mutableStateOf("")
+    var sampleMessage by mutableStateOf("")
+    var registering by mutableStateOf(false)
 
-    fun loadTemplates() {
+    init { load() }
+
+    fun load() {
         viewModelScope.launch {
             try {
+                val list = RetrofitClient.apiService.getSenderIds().await().senderIds ?: emptyList()
+                senderIds = list.filter { it.type == "otp" && it.status?.lowercase() == "approved" }
+                if (senderIds.isNotEmpty() && senderId.isEmpty()) senderId = senderIds.first().senderId ?: ""
                 templates = RetrofitClient.apiService.getOtpTemplates().await().templates ?: emptyList()
-            } catch (_: Exception) { /* templates are optional */ }
+            } catch (_: Exception) { /* sender IDs / templates are optional */ }
+        }
+    }
+
+    fun registerSender() {
+        error = null
+        success = null
+        registering = true
+        viewModelScope.launch {
+            try {
+                val res = RetrofitClient.apiService.requestSenderId(newSenderId, sampleMessage, "otp").await()
+                success = res.message ?: "OTP Sender ID request submitted"
+                newSenderId = ""
+                sampleMessage = ""
+                showRegister = false
+                load()
+            } catch (e: HttpException) {
+                error = ErrorUtils.getErrorMessage(e) ?: "Failed to submit request"
+            } catch (e: Exception) {
+                error = e.message ?: "An error occurred"
+            } finally {
+                registering = false
+            }
         }
     }
 
     fun regenerate() {
         otp = Random.nextInt(100000, 999999).toString()
     }
+
+    val recipientCount: Int get() = SmsRules.recipientCount(recipients)
 
     fun send() {
         error = null
@@ -84,8 +114,34 @@ fun OtpScreen(navController: NavController) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)
         ) {
-            FintechInput("Sender ID", viewModel.senderId, { viewModel.senderId = it })
-            FintechInput("Recipients (comma-separated)", viewModel.recipients, { viewModel.recipients = it })
+            // OTP Sender ID (approved, OTP type only)
+            LabeledDropdown(
+                label = "OTP Sender ID (approved)",
+                selected = viewModel.senderId,
+                options = viewModel.senderIds.mapNotNull { it.senderId },
+                placeholder = "Select an OTP Sender ID"
+            ) { viewModel.senderId = it }
+
+            if (viewModel.senderIds.isEmpty()) {
+                Text("No approved OTP Sender ID yet.", color = Danger, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+            }
+
+            // Register a new OTP sender ID
+            TextButton(onClick = { viewModel.showRegister = !viewModel.showRegister }, modifier = Modifier.padding(bottom = 8.dp)) {
+                Text(if (viewModel.showRegister) "Cancel registration" else "+ Register new OTP Sender ID", color = Primary, fontWeight = FontWeight.Bold)
+            }
+            if (viewModel.showRegister) {
+                FintechInput("New Sender ID (max 11 chars)", viewModel.newSenderId, { viewModel.newSenderId = it })
+                FintechInput("Sample Message", viewModel.sampleMessage, { viewModel.sampleMessage = it })
+                FintechButton(if (viewModel.registering) "Submitting..." else "Submit OTP Sender ID", { viewModel.registerSender() }, backgroundColor = OtpColor)
+            }
+
+            FintechInput("Recipients", viewModel.recipients, { viewModel.recipients = it }, placeholder = "Numbers separated by commas, spaces, or new lines")
+            Text(
+                "Recipients: ${viewModel.recipientCount}",
+                fontSize = 12.sp, color = TextSecondary, fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.End).padding(bottom = 8.dp)
+            )
 
             // OTP display + regenerate
             Surface(
@@ -139,3 +195,4 @@ fun OtpScreen(navController: NavController) {
         }
     }
 }
+
